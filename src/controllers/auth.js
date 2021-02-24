@@ -7,17 +7,19 @@ const { sendEmail } = require("../utils/index");
 // @desc Register user
 // @access Public
 exports.register = async (req, res) => {
+
     try {
         const { email } = req.body;
         // Make sure this account doesn't already exist
         const user = await User.findOne({email});
+
         if (user) return res.status(401).json(
             {message: "The email address you have entered is already associated with another account."})
         
         const newUser = new User({...req.body, role: "basic"}); // default as basic user
 
         const user_ = await newUser.save();
-
+        console.log(user_)
         await sendVerificationEmail(user_, req, res);
 
     } catch (error) {

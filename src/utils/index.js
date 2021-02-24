@@ -1,4 +1,4 @@
-const Datauri = require("daturi");
+const Datauri = require("datauri");
 const path = require("path");
 
 const cloudinary = require("../config/cloudinary");
@@ -32,7 +32,7 @@ function sendEmail(emailOptions) {
     return new Promise((resolve, reject) => {
         sgMail.send(mailOptions, (error, result) => {
             if (error) return reject(error);
-            return resolve(result
+            return resolve(result)
         })
     })
 }
