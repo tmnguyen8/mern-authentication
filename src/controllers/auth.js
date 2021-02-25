@@ -19,7 +19,7 @@ exports.register = async (req, res) => {
         const newUser = new User({...req.body, role: "basic"}); // default as basic user
 
         const user_ = await newUser.save();
-        console.log(user_)
+        // console.log(user_)
         await sendVerificationEmail(user_, req, res);
 
     } catch (error) {

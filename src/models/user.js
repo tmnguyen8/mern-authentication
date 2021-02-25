@@ -1,66 +1,92 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
-const Token = require("./token");
+const Token = require('../models/token');
 
 const UserSchema = new mongoose.Schema({
     email: {
         type: String,
         unique: true,
-        required: "Your email is required",
+        required: 'Your email is required',
         trim: true
     },
+
     username: {
         type: String,
         unique: true,
-        required: "Your username is required",
+        required: 'Your username is required',
     },
+
     password: {
         type: String,
-        required: "Your passport is required",
+        required: 'Your password is required',
         max: 100
     },
-    firstname: {
+
+    firstName: {
         type: String,
-        required: "First Name is required",
+        required: 'First Name is required',
         max: 100
     },
-    lastname: {
+
+    lastName: {
         type: String,
-        required: "Last Name is required",
+        required: 'Last Name is required',
         max: 100
     },
+
+    bio: {
+        type: String,
+        required: false,
+        max: 255
+    },
+
     profileImage: {
         type: String,
         required: false,
         max: 255
     },
+    
     isVerified: {
         type: Boolean,
         default: false
     },
+    
     resetPasswordToken: {
         type: String,
         required: false
     },
+
     resetPasswordExpires: {
         type: Date,
         required: false
     }
 }, {timestamps: true});
 
-// Function used to compare the password entered by the user during login to the 
-// user’s password currently in the database.
+
+UserSchema.pre('save',  function(next) {
+    const user = this;
+
+    if (!user.isModified('password')) return next();
+
+    bcrypt.genSalt(10, function(err, salt) {
+        if (err) return next(err);
+
+        bcrypt.hash(user.password, salt, function(err, hash) {
+            if (err) return next(err);
+
+            user.password = hash;
+            next();
+        });
+    });
+});
+
 UserSchema.methods.comparePassword = function(password) {
-    return bcrypt.compareSync(password, this.password)
+    return bcrypt.compareSync(password, this.password);
 };
 
-// Function used for creating the authentication tokens using the jwt package. 
-// This token will be returned to the user and will be required for accessing protected routes. 
-// The token payload includes the user’s first name, last name, username 
-// and email address and is set to expire 60 days in the future.
 UserSchema.methods.generateJWT = function() {
     const today = new Date();
     const expirationDate = new Date(today);
@@ -72,28 +98,25 @@ UserSchema.methods.generateJWT = function() {
         username: this.username,
         firstName: this.firstName,
         lastName: this.lastName,
-    }
+    };
 
     return jwt.sign(payload, process.env.JWT_SECRET, {
         expiresIn: parseInt(expirationDate.getTime() / 1000, 10)
-    })
+    });
 };
 
-// Function used to generate a password reset token using the crytpo package and and 
-// calculates an expiry time (1 hour), the user object is updated with this data.
 UserSchema.methods.generatePasswordReset = function() {
-    this.resetPasswordToken = crypto.randomBytes(20).toString("hex");
+    this.resetPasswordToken = crypto.randomBytes(20).toString('hex');
     this.resetPasswordExpires = Date.now() + 3600000; //expires in an hour
 };
 
-// Function used to generate a token and creates and returns an instance of the Token model.
 UserSchema.methods.generateVerificationToken = function() {
     let payload = {
         userId: this._id,
-        token: crypto.randomBytes(20).toString("hex")
-    }
+        token: crypto.randomBytes(20).toString('hex')
+    };
 
     return new Token(payload);
 };
 
-module.exports = mongoose.model("Users", UserSchema);
+module.exports = mongoose.model('Users', UserSchema);
